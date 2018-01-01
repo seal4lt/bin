@@ -1,0 +1,31 @@
+#!/bin/sh
+# depends: xdotool, dmenu, slop
+
+cachedir=${XDG_CACHE_HOME:-"$HOME/.cache"}
+if [ -d "$cachedir" ]; then
+	cache=$cachedir/dmenu_run
+else
+	cache=$HOME/.dmenu_cache # if no xdg dir, fall back to dotfile in ~
+fi
+cmd=$(
+	IFS=:
+	if stest -dqr -n "$cache" $PATH; then
+		stest -flx $PATH | sort -u | tee "$cache" | dmenu "$@"
+	else
+		dmenu "$@" < "$cache"
+	fi
+)
+
+lin=$(slop -f '%w %h %x %y') ; IFS=' ' ; read -a lin0 <<<${lin} ; x=${lin0[0]} ; y=${lin0[1]} ; w=${lin0[2]} ; h=${lin0[3]}
+
+wid=`xdotool getactivewindow`
+
+$cmd &
+
+nwin=$wid
+while [ "$nwin" = "$wid" ]; do
+	nwin=`xdotool getactivewindow`
+done
+
+xdotool windowmove $nwin $w $h
+xdotool windowsize $nwin $x $y
